@@ -92,6 +92,7 @@ class Chef
       #     Chef::ChefFS::FileSystem.resolve_path(root_path, 'cookbooks/java/recipes/default.rb')
       #
       def self.resolve_path(entry, path)
+        Kernel.puts "resolve_path  #{entry} #{path}"
         return entry if path.length == 0
         return resolve_path(entry.root, path) if path[0, 1] == "/" && entry.root != entry
 
@@ -103,6 +104,7 @@ class Chef
         Chef::ChefFS::PathUtils.split(path).each do |part|
           result = result.child(part)
         end
+        Kernel.puts "resolve_path COMPLETE #{result} #{path}"
         result
       end
 

@@ -88,11 +88,14 @@ class Chef
           # Customizations of base class
 
           def chef_object
+            Kernel.puts "BEGIN chef_object"
             cb = cookbook_version
             unless cb
               Chef::Log.error("Cookbook #{file_path} empty.")
+              Kernel.puts "ERROR chef_object"
               raise "Cookbook #{file_path} empty."
             end
+            Kernel.puts "END chef_object"
             cb
           rescue => e
             Chef::Log.error("Could not read #{path_for_printing} into a Chef object: #{e}")

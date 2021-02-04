@@ -261,6 +261,7 @@ class Chef
       end
 
       def get(path, request = nil)
+        Kernel.puts "*** GET start - #{path}"
         if use_memory_store?(path)
           @memory_store.get(path)
 
@@ -309,6 +310,7 @@ class Chef
         # GET /cookbooks/NAME/VERSION or /cookbook_artifacts/NAME/IDENTIFIER
         elsif %w{cookbooks cookbook_artifacts}.include?(path[0]) && path.length == 3
           with_entry(path) do |entry|
+            Kernel.puts "GET #{["cookbooks", path].flatten} entry: #{entry}"
             cookbook_type = path[0]
             result = nil
             begin
@@ -344,12 +346,14 @@ class Chef
               end
             end
 
+            Kernel.puts "*** GET COMPLETE"
             Chef::JSONCompat.to_json_pretty(result)
           end
 
         else
           with_entry(path) do |entry|
 
+            Kernel.puts "*** GET COMPLETE via read"
             entry.read
           rescue Chef::ChefFS::FileSystem::NotFoundError => e
             raise ChefZero::DataStore::DataNotFoundError.new(to_zero_path(e.entry), e)

@@ -376,6 +376,9 @@ class Chef
         headers = build_headers(method, url, base_headers, body)
         client = http_client(url)
         return_value = nil
+
+        Kernel.puts "URL: #{url}"
+
         if block_given?
           request, response = client.request(method, url, body, headers, &response_handler)
         else

@@ -49,6 +49,8 @@ class Chef
       def initialize(path, chefignore = nil)
         @cookbook_path = File.expand_path( path ) # cookbook_path from which this was loaded
 
+        Kernel.puts "LOADER INITIALIZING with #{path} expanded to #{@cookbook_path}"
+
         @inferred_cookbook_name = File.basename( path )
         @chefignore = chefignore
         @metadata = nil

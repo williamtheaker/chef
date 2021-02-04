@@ -78,21 +78,29 @@ class Chef
         run_context.events = events
         run_context.node = node
 
+        Kernel.puts "LOADING - cookbook_collection starting"
         cookbook_collection =
           if Chef::Config[:solo_legacy_mode]
             Chef::Cookbook::FileVendor.fetch_from_disk(Chef::Config[:cookbook_path])
             cl = Chef::CookbookLoader.new(Chef::Config[:cookbook_path])
             cl.load_cookbooks
+            Kernel.puts "LOADING - cookbook load complete, init COokbookCollection"
             Chef::CookbookCollection.new(cl)
           else
+            Kernel.puts "LOADING - from remote #{api_service}"
             Chef::Cookbook::FileVendor.fetch_from_remote(api_service)
+            Kernel.puts "LOADING - about to sync_cookbooks"
             cookbook_hash = sync_cookbooks
+            Kernel.puts "LOADING - cookbook sync complete, init COokbookCollection"
             Chef::CookbookCollection.new(cookbook_hash)
           end
 
+        Kernel.puts "LOADING - cookbook_collection commplete"
         cookbook_collection.validate!
+        Kernel.puts "LOADING - cookbook_collection validation complete"
         cookbook_collection.install_gems(events)
 
+        Kernel.puts "LOADING - cookbook_collection gem install complete"
         run_context.cookbook_collection = cookbook_collection
 
         # TODO: move this into the cookbook_compilation_start hook
@@ -100,15 +108,18 @@ class Chef
 
         events.cookbook_compilation_start(run_context)
 
+        Kernel.puts "LOADING - load expanded run list start"
         run_context.load(@run_list_expansion)
         if specific_recipes
           specific_recipes.each do |recipe_file|
             run_context.load_recipe_file(recipe_file)
           end
         end
+        Kernel.puts "LOADING - load expanded run list complete"
 
         events.cookbook_compilation_complete(run_context)
 
+        Kernel.puts "LOADING - compilation complete"
         run_context
       end
 
@@ -182,12 +193,17 @@ class Chef
         Chef::Log.trace("Synchronizing cookbooks")
 
         begin
+          Kernel.puts "sync_cookbooks: start"
           events.cookbook_resolution_start(@expanded_run_list_with_versions)
+          Kernel.puts "sync_cookbooks: post for cookbook_versions w/ runlist #{@expanded_run_list_with_versions}"
           cookbook_hash = api_service.post("environments/#{node.chef_environment}/cookbook_versions",
             { run_list: @expanded_run_list_with_versions })
 
+          Kernel.puts "sync_cookbooks: post for cookbook_versions done"
           cookbook_hash = cookbook_hash.inject({}) do |memo, (key, value)|
+            Kernel.puts "sync_cookbooks: CookbookVersion.from_hash"
             memo[key] = Chef::CookbookVersion.from_hash(value)
+            Kernel.puts "sync_cookbooks: CookbookVersion.from_hash done"
             memo
           end
         rescue Exception => e
