@@ -232,6 +232,34 @@ RSpec.configure do |config|
 
     Chef.reset!
 
+    # Hack warning:
+    #
+    # Something across gem_installer_spec and mixlib_cli specs are polluting gem state
+    # so that the 'unmockening' test in rubygems_spec fails.  Calling Gem.clear_paths this before each test
+    # (or anything that causes `Gem.paths` to initialize or reinitialize) prevents
+    # the problem; this is a hacky workaround.  The better answer would be to understand
+    # what is happening in those first two specs that are causing gem state to get broken,
+    # and the nature of the breakage.  Time doesn't allow for that yet, so I leave this note instead.
+    #
+    # This was discovered in the process of removing `knife` specs from `chef`; a fourth
+    # spec (supermarket_share_spec) was hiding the problem, because in one of its test
+    # it made a call  Gem.binpath (indirectly) - which caused it to initialize sooner, and prevents the
+    # failure.
+    #
+    # Of note, if we put this Gem.clear_paths IN the failing test, it does fix it. But it
+    # would leave the trap set for when another gemspec-searching test is added in the wrong place.
+    # Interestingly, using other methods like Gem.paths to fix it won't work inside a test, because
+    # Gem paths are alrady initalized and the damage is done.
+    # entirely outside of the spec file.
+
+    #
+    # The WIP to track this down (with a ton of puts debugs and the test cases pared down to nearly a minimum needed for a repro)
+    # is in mp/broken-gems if anyone wants to take that further.  For now, calling Gem.clear_paths forces Gem to return
+    # to a sane internal state and avoids the issue.  In that branch `rake gemfail` will run the specific tests in the order needed for
+
+    # Uncomment this to 'fix' the error you get when running `rake mini`.
+    #Gem.clear_paths
+
     Chef::ChefFS::FileSystemCache.instance.reset!
 
     Chef::Config.reset

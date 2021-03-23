@@ -54,58 +54,7 @@ class Chef
         default: "https://supermarket.chef.io"
 
       def run
-        config[:cookbook_path] ||= Chef::Config[:cookbook_path]
-
-        if @name_args.length < 1
-          show_usage
-          ui.fatal("You must specify the cookbook name.")
-          exit(1)
-        elsif @name_args.length < 2
-          cookbook_name = @name_args[0]
-          category = get_category(cookbook_name)
-        else
-          cookbook_name = @name_args[0]
-          category = @name_args[1]
-        end
-
-        cl = Chef::CookbookLoader.new(config[:cookbook_path])
-        if cl.cookbook_exists?(cookbook_name)
-          cookbook = cl[cookbook_name]
-          Chef::CookbookUploader.new(cookbook).validate_cookbooks
-          tmp_cookbook_dir = Chef::CookbookSiteStreamingUploader.create_build_dir(cookbook)
-          begin
-            Chef::Log.trace("Temp cookbook directory is #{tmp_cookbook_dir.inspect}")
-            ui.info("Making tarball #{cookbook_name}.tgz")
-            shell_out!("#{tar_cmd} -czf #{cookbook_name}.tgz #{cookbook_name}", cwd: tmp_cookbook_dir)
-          rescue => e
-            ui.error("Error making tarball #{cookbook_name}.tgz: #{e.message}. Increase log verbosity (-VV) for more information.")
-            Chef::Log.trace("\n#{e.backtrace.join("\n")}")
-            exit(1)
-          end
-
-          if config[:dry_run]
-            ui.info("Not uploading #{cookbook_name}.tgz due to --dry-run flag.")
-            result = shell_out!("#{tar_cmd} -tzf #{cookbook_name}.tgz", cwd: tmp_cookbook_dir)
-            ui.info(result.stdout)
-            FileUtils.rm_rf tmp_cookbook_dir
-            return
-          end
-
-          begin
-            do_upload("#{tmp_cookbook_dir}/#{cookbook_name}.tgz", category, Chef::Config[:node_name], Chef::Config[:client_key])
-            ui.info("Upload complete")
-            Chef::Log.trace("Removing local staging directory at #{tmp_cookbook_dir}")
-            FileUtils.rm_rf tmp_cookbook_dir
-          rescue => e
-            ui.error("Error uploading cookbook #{cookbook_name} to Supermarket: #{e.message}. Increase log verbosity (-VV) for more information.")
-            Chef::Log.trace("\n#{e.backtrace.join("\n")}")
-            exit(1)
-          end
-
-        else
-          ui.error("Could not find cookbook #{cookbook_name} in your cookbook path.")
-          exit(1)
-        end
+      #  shell_out("ls")
       end
 
       def get_category(cookbook_name)
@@ -156,7 +105,9 @@ class Chef
             if shell_out("which gnutar").exitstatus.equal?(0)
               @tar_cmd = "gnutar"
             end
+            puts "TAR_CMD: #{@tar_cmd}"
           rescue Errno::ENOENT
+            puts "OOOPS - ENOENT!"
           end
         end
         @tar_cmd

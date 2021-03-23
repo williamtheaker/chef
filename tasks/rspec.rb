@@ -37,6 +37,20 @@ begin
 
   task default: :spec
 
+
+  desc "Mini"
+  RSpec::Core::RakeTask.new(:mini) do |t|
+    t.verbose = true
+    t.rspec_opts= "--format doc"
+    t.pattern =
+      FileList["spec/unit/cookbook/gem_installer_spec.rb"] +
+      FileList["spec/unit/mixin/shell_out_spec.rb"] +
+      FileList["spec/unit/provider/package/rubygems_spec.rb"] +
+      # Does not HAVE To be the file, but I've already pared it down
+      # and commented some test variations that surface/hide the failure
+      FileList["spec/unit/knife/supermarket_share_spec.rb"]
+  end
+
   task spec: :component_specs
 
   desc "Run all specs in spec directory"

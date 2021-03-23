@@ -32,8 +32,8 @@ module ChefUtils
         # ensure the Ruby and Gem bindirs are included for omnibus chef installs
         new_paths = env_path.split(path_separator)
         [ __ruby_bindir, __gem_bindir ].compact.each do |path|
-          new_paths = [ path ] + new_paths unless new_paths.include?(path)
-        end
+           new_paths = [ path ] + new_paths unless new_paths.include?(path)
+         end
         __default_paths.each do |path|
           new_paths << path unless new_paths.include?(path)
         end
@@ -51,7 +51,9 @@ module ChefUtils
       end
 
       def __gem_bindir
-        Gem.bindir
+        dir = Gem.bindir
+        puts "__gem_bindir = #{dir} "
+        dir
       end
 
       extend self

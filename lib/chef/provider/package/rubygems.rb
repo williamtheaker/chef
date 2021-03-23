@@ -98,6 +98,20 @@ class Chef
               # installed versions, you get the one from Chef's Ruby's default
               # gems. This workaround ignores default gems entirely so we see
               # only the installed gems.
+              puts "IN EXECUTION"
+              # OKAY IN HERE, @paths is already defined in Gem!
+              puts "Gem.bindir #{Gem.bindir}"
+              puts "gem_specification.dirs: #{gem_specification.dirs}"
+              #require 'pry'; binding.pry
+              puts "Gem.path: #{Gem.path}"
+              puts "PathSupportGem.home: #{Gem::PathSupport.new(ENV).home}"
+              # puts "ENV['GEM_PATH'] which seems returned from gem_specification.dirs in PathSupport: #{ENV['GEM_PATH']}"
+              # puts "Gem::VERSION: #{Gem::VERSION}"
+              # ::File.open("/home/marc/projects/chef/env.out", "w") do |f|
+              #   ENV.each do |k,v|
+              #     f.write("#{k}=#{v}\n")
+              #   end
+              # end
               stubs = gem_specification.send(:installed_stubs, gem_specification.dirs, "#{gem_dep.name}-*.gemspec")
               # Filter down to only to only stubs we actually want. The name
               # filter is needed in case of things like `foo-*.gemspec` also
@@ -306,6 +320,7 @@ class Chef
           end
 
           def gem_paths
+            puts "OHHHH NOOOO!"
             if self.class.gempath_cache.key?(@gem_binary_location)
               self.class.gempath_cache[@gem_binary_location]
             else
@@ -348,6 +363,7 @@ class Chef
             if self.class.platform_cache.key?(@gem_binary_location)
               self.class.platform_cache[@gem_binary_location]
             else
+              puts "OOPS I SHLLED OUT!"
               gem_environment = shell_out!("#{@gem_binary_location} env").stdout
               self.class.platform_cache[@gem_binary_location] = if jruby = gem_environment[JRUBY_PLATFORM]
                                                                   ["ruby", Gem::Platform.new(jruby)]
