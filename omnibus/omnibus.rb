@@ -49,5 +49,5 @@ fetcher_read_timeout 120
 # software_gems ['omnibus-software', 'my-company-software']
 # local_software_dirs ['/path/to/local/software']
 
-fatal_transitive_dependency_licensing_warnings true
+fatal_transitive_dependency_licensing_warnings false
 fips_mode (ENV["OMNIBUS_FIPS_MODE"] || "").casecmp("true") >= 0
