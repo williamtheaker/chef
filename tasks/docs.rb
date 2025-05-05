@@ -185,7 +185,7 @@ namespace :docs_site do
 
       properties["remote_directory_recursive_directories"] = true if name == "remote_directory"
 
-      properties["remote_file_prevent_re_downloads"] =  true if name == "remote_file"
+      properties["remote_file_prevent_re_downloads"] = true if name == "remote_file"
 
       properties["remote_file_unc_path"] = true if name == "remote_file"
 
@@ -276,6 +276,7 @@ namespace :docs_site do
       r["syntax_full_properties_list"] = friendly_full_property_list(name, properties)
       r["actions_list"] = action_list(data["actions"], data["default_action"] )
       r["properties_list"] = properties_list(properties)
+      r["target_mode"] = data["target_mode"]
       r["examples"] = data["examples"]
 
       r

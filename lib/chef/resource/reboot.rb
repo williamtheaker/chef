@@ -23,13 +23,14 @@ class Chef
   class Resource
     class Reboot < Chef::Resource
 
-      provides :reboot
+      provides :reboot, target_mode: true
+      target_mode support: :full
 
-      description "Use the **reboot** resource to reboot a node, a necessary step with some"\
-                  " installations on certain platforms. This resource is supported for use on"\
-                  " the Microsoft Windows, macOS, and Linux platforms.\n"\
-                  "In using this resource via notifications, it's important to *only* use"\
-                  " immediate notifications. Delayed notifications produce unintuitive and"\
+      description "Use the **reboot** resource to reboot a node, a necessary step with some" \
+                  " installations on certain platforms. This resource is supported for use on" \
+                  " the Microsoft Windows, macOS, and Linux platforms.\n" \
+                  "In using this resource via notifications, it's important to *only* use" \
+                  " immediate notifications. Delayed notifications produce unintuitive and" \
                   " probably undesired results."
       introduced "12.0"
       examples <<~DOC

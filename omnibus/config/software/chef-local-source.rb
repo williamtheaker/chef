@@ -56,7 +56,7 @@ ruby_version = ruby_version.split(".")[0..1].join(".")
 ruby_mmv = "#{ruby_version}.0"
 ruby_dir = "#{install_dir}/embedded/lib/ruby/#{ruby_mmv}"
 gem_dir = "#{install_dir}/embedded/lib/ruby/gems/#{ruby_mmv}"
-bin_dirs bin_dirs.concat ["#{gem_dir}/gems/*/bin/**"]
+bin_dirs bin_dirs.push "#{gem_dir}/gems/*/bin/**"
 lib_dirs ["#{ruby_dir}/**", "#{gem_dir}/extensions/**", "#{gem_dir}/bundler/gems/extensions/**", "#{gem_dir}/bundler/gems/*", "#{gem_dir}/bundler/gems/*/lib/**", "#{gem_dir}/gems/*", "#{gem_dir}/gems/*/lib/**", "#{gem_dir}/gems/*/ext/**"]
 
 dependency "chef-foundation"
@@ -67,7 +67,7 @@ build do
   env = with_standard_compiler_flags(with_embedded_path)
 
   # The --without groups here MUST match groups in https://github.com/chef/chef/blob/main/Gemfile
-  excluded_groups = %w{docgen chefstyle}
+  excluded_groups = %w{docgen}
   excluded_groups << "ruby_prof" if aix?
   excluded_groups << "ruby_shadow" if aix?
   excluded_groups << "ed25519" if solaris2?
@@ -75,8 +75,8 @@ build do
   # these are gems which are not shipped but which must be installed in the testers
   bundle_excludes = excluded_groups + %w{development test}
 
-  bundle "install --without #{bundle_excludes.join(" ")}", env: env
-
+  bundle "config set --local without docgen development test", env: env
+  bundle "install --jobs=2 --without #{bundle_excludes.join(" ")}", env: env
   ruby "post-bundle-install.rb", env: env
 
   # use the rake install task to build/install chef-config/chef-utils

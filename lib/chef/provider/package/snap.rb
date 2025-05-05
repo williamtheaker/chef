@@ -130,7 +130,7 @@ class Chef
             "Accept: application/json\r\n" +
             "Content-Type: application/json\r\n"
           if method == "POST"
-            pdata = post_data.to_json.to_s
+            pdata = post_data.to_json
             request.concat("Content-Length: #{pdata.bytesize}\r\n\r\n#{pdata}")
           end
           request.concat("\r\n")
@@ -218,11 +218,12 @@ class Chef
           waiting = true
           while waiting
             result = get_change_id(id)
+
             case result["result"]["status"]
             when "Do", "Doing", "Undoing", "Undo"
               # Continue
             when "Abort", "Hold", "Error"
-              raise result
+              raise "#{result["result"]["summary"]} - #{result["result"]["status"]} - #{result["result"]["err"]}"
             when "Done"
               waiting = false
             else
@@ -329,7 +330,7 @@ class Chef
         def generate_snap_json(snap_names, action, channel, options, revision = nil)
           request = {
               "action" => action,
-              "snaps" => snap_names,
+              "snaps" => Array(snap_names),
           }
           if %w{install refresh switch}.include?(action) && channel
             request["channel"] = channel
@@ -372,12 +373,24 @@ class Chef
             raise Chef::Exceptions::Package, json["result"], caller
           end
 
-          unless json["result"][0]["channels"]["latest/#{channel}"]
-            raise Chef::Exceptions::Package, "No version of #{name} in channel #{channel}", caller
-          end
+          Chef::Log.debug("snapd API response: #{json}\n")
 
-          # Return the version matching the channel
-          json["result"][0]["channels"]["latest/#{channel}"]["version"]
+          # If no channel is passed, use the snap's default version
+          if channel.nil?
+            Chef::Log.debug("Channel is nil, using default snap version: #{json["result"][0]["version"]}")
+            json["result"][0]["version"]
+          else
+            # Before Chef 19, this resource hardcoded `latest`.
+            if %w{edge beta candidate stable}.include?(channel)
+              channel = "latest/#{channel}"
+            end
+            unless json["result"][0]["channels"][channel]
+              raise Chef::Exceptions::Package, "No version of #{name} in channel #{channel}", caller
+            end
+
+            # Return the version matching the channel
+            json["result"][0]["channels"][channel]["version"]
+          end
         end
 
         def get_installed_packages

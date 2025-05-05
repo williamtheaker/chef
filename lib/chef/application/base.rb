@@ -24,7 +24,9 @@ require "chef-utils/dist" unless defined?(ChefUtils::Dist)
 require_relative "../daemon"
 require "chef-config/mixin/dot_d"
 require "license_acceptance/cli_flags/mixlib_cli"
+require "chef-licensing/cli_flags/mixlib_cli"
 require "chef/monkey_patches/net-http"
+require_relative "../licensing"
 
 module Mixlib
   autoload :Archive, "mixlib/archive"
@@ -45,6 +47,7 @@ class Chef::Application::Base < Chef::Application
   include Chef::Mixin::ShellOut
   include ChefConfig::Mixin::DotD
   include LicenseAcceptance::CLIFlags::MixlibCLI
+  include ChefLicensing::CLIFlags::MixlibCLI
 
   # Mimic self_pipe sleep from Unicorn to capture signals safely
   SELF_PIPE = [] # rubocop:disable Style/MutableConstant
@@ -96,7 +99,7 @@ class Chef::Application::Base < Chef::Application
     short: "-l LEVEL",
     long: "--log_level LEVEL",
     description: "Set the log level (auto, trace, debug, info, warn, error, fatal).",
-    proc: lambda { |l| l.to_sym }
+    proc: lambda(&:to_sym)
 
   option :log_location_cli,
     short: "-L LOGLOCATION",
@@ -115,8 +118,7 @@ class Chef::Application::Base < Chef::Application
     description: "Show this help message.",
     on: :tail,
     boolean: true,
-    show_options: true,
-    exit: 0
+    proc: proc { print_help }
 
   option :user,
     short: "-u USER",
@@ -139,7 +141,7 @@ class Chef::Application::Base < Chef::Application
     short: "-i SECONDS",
     long: "--interval SECONDS",
     description: "Run #{ChefUtils::Dist::Infra::PRODUCT} periodically, in seconds.",
-    proc: lambda { |s| s.to_i }
+    proc: lambda(&:to_i)
 
   option :json_attribs,
     short: "-j JSON_ATTRIBS",
@@ -157,7 +159,7 @@ class Chef::Application::Base < Chef::Application
     short: "-s SECONDS",
     long: "--splay SECONDS",
     description: "The splay time for running at intervals, in seconds.",
-    proc: lambda { |s| s.to_i }
+    proc: lambda(&:to_i)
 
   option :environment,
     short: "-E ENVIRONMENT",
@@ -189,7 +191,7 @@ class Chef::Application::Base < Chef::Application
   option :run_lock_timeout,
     long: "--run-lock-timeout SECONDS",
     description: "Set maximum duration to wait for another client run to finish, default is indefinitely.",
-    proc: lambda { |s| s.to_i }
+    proc: lambda(&:to_i)
 
   option :version,
     short: "-v",
@@ -314,10 +316,34 @@ class Chef::Application::Base < Chef::Application
       end
     }
 
+  if ChefUtils::Dist::Infra::EXEC == "chef"
+    option :license_add,
+        long: "--license-add",
+        description: "Add a license key to the license pool.",
+        boolean: true,
+        proc: lambda { |v| Chef::Licensing.license_add },
+        exit: 0
+
+    option :license_list,
+        long: "--license-list",
+        description: "List all license keys in the license pool.",
+        boolean: true,
+        proc: lambda { |v| Chef::Licensing.license_list },
+        exit: 0
+  end
+
   IMMEDIATE_RUN_SIGNAL = "1".freeze
   RECONFIGURE_SIGNAL = "H".freeze
 
   attr_reader :chef_client_json
+
+  def self.print_help
+    instance = new
+    instance.parse_options([])
+    puts instance.opt_parser
+    puts Chef::Licensing.licensing_help if ChefUtils::Dist::Infra::EXEC == "chef"
+    exit 0
+  end
 
   def setup_application
     Chef::Daemon.change_privilege
@@ -344,6 +370,11 @@ class Chef::Application::Base < Chef::Application
 
   # Run the chef client, optionally daemonizing or looping at intervals.
   def run_application
+    if ENV["TEST_KITCHEN"]
+      puts "Temporarily bypassing licensing check in Kitchen"
+    else
+      Chef::Licensing.check_software_entitlement! if ChefUtils::Dist::Infra::EXEC == "chef"
+    end
     if Chef::Config[:version]
       puts "#{ChefUtils::Dist::Infra::PRODUCT} version: #{::Chef::VERSION}"
     end

@@ -22,17 +22,49 @@ class Chef
   class Resource
     class SnapPackage < Chef::Resource::Package
 
-      provides :snap_package
+      provides :snap_package, target_mode: true
+      target_mode support: :full
 
-      description "Use the **snap_package** resource to manage snap packages on Debian and Ubuntu platforms."
+      description "Use the **snap_package** resource to manage snap packages on supported Linux distributions."
       introduced "15.0"
+      examples <<~DOC
+      **Install a package**
+
+      ```ruby
+      snap_package 'hello'
+      ```
+
+      **Upgrade a package**
+
+      ```ruby
+      snap_package 'hello' do
+        action :upgrade
+      end
+      ```
+
+      **Install a package from a specific channel track**
+
+      ```ruby
+      snap_package 'firefox' do
+        channel 'esr/stable'
+        action :upgrade
+      end
+      ```
+
+      **Install a package with classic confinement**
+
+      ```ruby
+      snap_package 'hello' do
+        options 'classic'
+      end
+      ```
+      DOC
 
       allowed_actions :install, :upgrade, :remove, :purge
 
-      property :channel, String,
-        description: "The default channel. For example: stable.",
-        default: "stable",
-        equal_to: %w{edge beta candidate stable},
+      property :channel, [String, nil],
+        description: "The desired channel. For example: `latest/stable`. `latest/beta/fix-test-062`, or `0.x/edge`. If nil, the resource will install the snap's default version. See <https://snapcraft.io/docs/channels>.",
+        default: "latest/stable",
         desired_state: false
     end
   end
